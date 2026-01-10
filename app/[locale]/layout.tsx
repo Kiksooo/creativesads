@@ -1,7 +1,13 @@
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
-import { isValidLocale, type Locale } from '@/lib/i18n/messages';
+import { isValidLocale, type Locale, locales } from '@/lib/i18n/messages';
 import AppHeader from '@/src/components/AppHeader';
+
+export async function generateStaticParams() {
+  return locales.map((locale) => ({
+    locale,
+  }));
+}
 
 export async function generateMetadata({
   params,

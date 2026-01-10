@@ -29,6 +29,7 @@ export default function UploadPage() {
   const [geo, setGeo] = useState('');
   const [language, setLanguage] = useState('');
   const [vertical, setVertical] = useState('');
+  const [goal, setGoal] = useState('');
   const [state, setState] = useState<UploadState>('idle');
   const [error, setError] = useState<string | null>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -50,13 +51,14 @@ export default function UploadPage() {
       formData.append('file', file);
       
       if (platform) formData.append('platform', platform);
-      if (geo) formData.append('geo', geo);
+      if (geo) formData.append('country', geo);
       if (language) formData.append('language', language);
       if (vertical) formData.append('vertical', vertical);
+      if (goal) formData.append('goal', goal);
 
-      // Upload file
-      const uploadResponse = await apiUpload<{ id?: string; creative?: { id?: string } }>(
-        '/creatives/upload',
+      // Upload file and create creative
+      const uploadResponse = await apiUpload<{ creative?: { id?: string }; id?: string }>(
+        '/creatives',
         formData
       );
 
@@ -73,9 +75,9 @@ export default function UploadPage() {
         return;
       }
 
-      // Extract creative ID from different response formats
+      // Extract creative ID from response
       const data = uploadResponse.data;
-      const creativeId = data?.id || data?.creative?.id;
+      const creativeId = data?.creative?.id || data?.id;
 
       if (!creativeId) {
         setError('Upload succeeded but no creative ID received');
@@ -86,22 +88,24 @@ export default function UploadPage() {
       setUploadProgress(100);
       setState('processing');
 
-      // Start processing
-      const processResponse = await apiPost<{ success?: boolean }>(
-        `/creatives/${creativeId}/process`,
-        { mode: 'full' }
+      // Start analysis automatically
+      const analyzeResponse = await apiPost<{ analysis?: unknown }>(
+        `/creatives/${creativeId}/analyze`
       );
 
-      if (processResponse.status === 401) {
+      if (analyzeResponse.status === 401) {
         clearToken();
         setSessionExpired(true);
         setState('error');
         return;
       }
 
-      if (processResponse.error) {
-        // Even if process fails, redirect to detail page
-        console.warn('Process failed:', processResponse.error);
+      if (analyzeResponse.status === 429) {
+        // Limit reached, but redirect anyway
+        console.warn('Analysis limit reached, redirecting to detail page');
+      } else if (analyzeResponse.error) {
+        // Analysis failed, but redirect to detail page anyway
+        console.warn('Analysis failed:', analyzeResponse.error);
       }
 
       // Redirect to detail page
@@ -160,7 +164,7 @@ export default function UploadPage() {
           />
           <Input
             type="text"
-            label="Geo (optional)"
+            label={t(locale, 'upload.country') + ' (optional)'}
             value={geo}
             onChange={(e) => setGeo(e.target.value)}
             placeholder="e.g. US, UK"
@@ -180,6 +184,14 @@ export default function UploadPage() {
             value={vertical}
             onChange={(e) => setVertical(e.target.value)}
             placeholder="e.g. Fashion, Tech"
+            disabled={state === 'uploading' || state === 'processing'}
+          />
+          <Input
+            type="text"
+            label={t(locale, 'upload.goal') + ' (optional)'}
+            value={goal}
+            onChange={(e) => setGoal(e.target.value)}
+            placeholder="e.g. Brand awareness, Conversions"
             disabled={state === 'uploading' || state === 'processing'}
           />
         </div>
@@ -243,6 +255,11 @@ export default function UploadPage() {
                 size="lg"
                 onClick={() => {
                   setFile(null);
+                  setPlatform('');
+                  setGeo('');
+                  setLanguage('');
+                  setVertical('');
+                  setGoal('');
                   setError(null);
                   setState('idle');
                   setUploadProgress(0);

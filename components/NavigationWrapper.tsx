@@ -14,3 +14,4 @@ export default function NavigationWrapper({ locale }: NavigationWrapperProps) {
   return <Navigation locale={locale} currentPath={pathname} />;
 }
 
+

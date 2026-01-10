@@ -79,19 +79,14 @@ export default async function LocaleHome({
 
         {/* CTA Buttons */}
         <div className="flex flex-wrap justify-center gap-4">
-          <Link href={`/${locale}/app`}>
-            <Button variant="primary" size="lg">
-              Open Dashboard
-            </Button>
-          </Link>
-          <Link href={`/${locale}/app/upload`}>
-            <Button variant="secondary" size="lg">
-              {t(locale, 'common.upload')}
-            </Button>
-          </Link>
           <Link href={`/${locale}/register`}>
-            <Button variant="ghost" size="lg">
-              Create account
+            <Button variant="primary" size="lg">
+              {t(locale, 'home.cta.signup')}
+            </Button>
+          </Link>
+          <Link href={`/${locale}/app`}>
+            <Button variant="secondary" size="lg">
+              {t(locale, 'home.cta.tryDemo')}
             </Button>
           </Link>
         </div>

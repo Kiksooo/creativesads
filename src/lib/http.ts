@@ -13,3 +13,4 @@ export async function parseApiError(res: Response): Promise<string> {
   return `Server error (${res.status}). Check API logs.`;
 }
 
+

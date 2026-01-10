@@ -44,7 +44,34 @@ export type TranslationKey =
   | 'register.success.verified'
   | 'register.loading'
   | 'dashboard.title'
-  | 'dashboard.description';
+  | 'dashboard.description'
+  | 'home.cta.signup'
+  | 'home.cta.tryDemo'
+  | 'creative.status.queued'
+  | 'creative.status.processing'
+  | 'creative.status.done'
+  | 'creative.status.failed'
+  | 'creative.analysis.score'
+  | 'creative.analysis.hookScore'
+  | 'creative.analysis.clarityScore'
+  | 'creative.analysis.complianceRisk'
+  | 'creative.analysis.strengths'
+  | 'creative.analysis.issues'
+  | 'creative.analysis.fixes'
+  | 'creative.analysis.hooks'
+  | 'creative.analysis.ctas'
+  | 'creative.analysis.script15s'
+  | 'creative.analysis.summary'
+  | 'settings.title'
+  | 'settings.profile'
+  | 'settings.account'
+  | 'settings.limits'
+  | 'upload.goal'
+  | 'upload.country'
+  | 'common.loading'
+  | 'common.error'
+  | 'common.retry'
+  | 'common.back';
 
 const translations: Record<Locale, Record<TranslationKey, string>> = {
   ru: {
@@ -90,6 +117,33 @@ const translations: Record<Locale, Record<TranslationKey, string>> = {
     'register.loading': 'Загрузка...',
     'dashboard.title': 'Панель управления',
     'dashboard.description': 'Панель управления работает',
+    'home.cta.signup': 'Регистрация',
+    'home.cta.tryDemo': 'Попробовать демо',
+    'creative.status.queued': 'В очереди',
+    'creative.status.processing': 'Обработка',
+    'creative.status.done': 'Готово',
+    'creative.status.failed': 'Ошибка',
+    'creative.analysis.score': 'Общий счёт',
+    'creative.analysis.hookScore': 'Счёт хука',
+    'creative.analysis.clarityScore': 'Счёт ясности',
+    'creative.analysis.complianceRisk': 'Риск соответствия',
+    'creative.analysis.strengths': 'Сильные стороны',
+    'creative.analysis.issues': 'Проблемы',
+    'creative.analysis.fixes': 'Исправления',
+    'creative.analysis.hooks': 'Хуки',
+    'creative.analysis.ctas': 'Призывы к действию',
+    'creative.analysis.script15s': 'Скрипт 15 сек',
+    'creative.analysis.summary': 'Резюме',
+    'settings.title': 'Настройки',
+    'settings.profile': 'Профиль',
+    'settings.account': 'Аккаунт',
+    'settings.limits': 'Лимиты',
+    'upload.goal': 'Цель',
+    'upload.country': 'Страна',
+    'common.loading': 'Загрузка...',
+    'common.error': 'Ошибка',
+    'common.retry': 'Повторить',
+    'common.back': 'Назад',
   },
   en: {
     'nav.home': 'Home',
@@ -134,6 +188,33 @@ const translations: Record<Locale, Record<TranslationKey, string>> = {
     'register.loading': 'Loading...',
     'dashboard.title': 'Dashboard',
     'dashboard.description': 'Dashboard is working',
+    'home.cta.signup': 'Sign Up',
+    'home.cta.tryDemo': 'Try Demo',
+    'creative.status.queued': 'Queued',
+    'creative.status.processing': 'Processing',
+    'creative.status.done': 'Done',
+    'creative.status.failed': 'Failed',
+    'creative.analysis.score': 'Overall Score',
+    'creative.analysis.hookScore': 'Hook Score',
+    'creative.analysis.clarityScore': 'Clarity Score',
+    'creative.analysis.complianceRisk': 'Compliance Risk',
+    'creative.analysis.strengths': 'Strengths',
+    'creative.analysis.issues': 'Issues',
+    'creative.analysis.fixes': 'Fixes',
+    'creative.analysis.hooks': 'Hooks',
+    'creative.analysis.ctas': 'CTAs',
+    'creative.analysis.script15s': '15s Script',
+    'creative.analysis.summary': 'Summary',
+    'settings.title': 'Settings',
+    'settings.profile': 'Profile',
+    'settings.account': 'Account',
+    'settings.limits': 'Limits',
+    'upload.goal': 'Goal',
+    'upload.country': 'Country',
+    'common.loading': 'Loading...',
+    'common.error': 'Error',
+    'common.retry': 'Retry',
+    'common.back': 'Back',
   },
   es: {
     'nav.home': 'Inicio',
@@ -178,6 +259,33 @@ const translations: Record<Locale, Record<TranslationKey, string>> = {
     'register.loading': 'Cargando...',
     'dashboard.title': 'Panel',
     'dashboard.description': 'El panel está funcionando',
+    'home.cta.signup': 'Registrarse',
+    'home.cta.tryDemo': 'Probar Demo',
+    'creative.status.queued': 'En cola',
+    'creative.status.processing': 'Procesando',
+    'creative.status.done': 'Completado',
+    'creative.status.failed': 'Fallido',
+    'creative.analysis.score': 'Puntuación General',
+    'creative.analysis.hookScore': 'Puntuación Hook',
+    'creative.analysis.clarityScore': 'Puntuación Claridad',
+    'creative.analysis.complianceRisk': 'Riesgo de Cumplimiento',
+    'creative.analysis.strengths': 'Fortalezas',
+    'creative.analysis.issues': 'Problemas',
+    'creative.analysis.fixes': 'Correcciones',
+    'creative.analysis.hooks': 'Hooks',
+    'creative.analysis.ctas': 'CTAs',
+    'creative.analysis.script15s': 'Script 15s',
+    'creative.analysis.summary': 'Resumen',
+    'settings.title': 'Configuración',
+    'settings.profile': 'Perfil',
+    'settings.account': 'Cuenta',
+    'settings.limits': 'Límites',
+    'upload.goal': 'Objetivo',
+    'upload.country': 'País',
+    'common.loading': 'Cargando...',
+    'common.error': 'Error',
+    'common.retry': 'Reintentar',
+    'common.back': 'Atrás',
   },
 };
 

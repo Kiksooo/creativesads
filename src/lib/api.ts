@@ -11,7 +11,17 @@ export async function apiFetch<T = unknown>(
 ): Promise<{ data?: T; error?: string; status: number }> {
   const { requireAuth = true, headers = {}, body, ...restOptions } = options;
 
-  const url = path.startsWith('/api/v1') ? path : `/api/v1${path}`;
+  // Support both /api/ and /api/v1/ paths
+  // If path already starts with /api/, use it as-is
+  // Otherwise, prepend /api/v1/ for backward compatibility
+  let url: string;
+  if (path.startsWith('/api/')) {
+    url = path;
+  } else if (path.startsWith('/api/v1')) {
+    url = path;
+  } else {
+    url = `/api/v1${path}`;
+  }
   
   const token = getToken();
   
@@ -29,12 +39,18 @@ export async function apiFetch<T = unknown>(
   }
 
   try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+
     const res = await fetch(url, {
       ...restOptions,
       method: restOptions.method || 'GET',
       headers: requestHeaders,
       body: body instanceof FormData ? body : (body ? JSON.stringify(body) : undefined),
+      signal: controller.signal,
     });
+
+    clearTimeout(timeout);
 
     // Handle 401 - session expired
     if (res.status === 401) {
@@ -73,6 +89,36 @@ export async function apiFetch<T = unknown>(
       status: res.status,
     };
   } catch (error) {
+    if (error instanceof Error && error.name === 'AbortError') {
+      return {
+        error: 'Request timeout. Please try again.',
+        status: 0,
+      };
+    }
+    
+    // Retry logic for network errors (1 retry)
+    if (error instanceof TypeError && error.message.includes('fetch')) {
+      try {
+        await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second
+        const retryRes = await fetch(url, {
+          ...restOptions,
+          method: restOptions.method || 'GET',
+          headers: requestHeaders,
+          body: body instanceof FormData ? body : (body ? JSON.stringify(body) : undefined),
+        });
+        
+        if (retryRes.ok) {
+          const retryData = await retryRes.json().catch(() => null);
+          return {
+            data: retryData as T,
+            status: retryRes.status,
+          };
+        }
+      } catch (retryError) {
+        // Ignore retry error, fall through to original error
+      }
+    }
+    
     return {
       error: error instanceof Error ? error.message : 'Network error',
       status: 0,
