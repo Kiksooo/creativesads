@@ -104,7 +104,7 @@ export default function LibraryPage() {
           title="Error loading library"
           description={error}
           actionLabel={t(locale, 'common.retry')}
-          onAction={() => router.refresh()}
+          onClick={() => router.refresh()}
         />
       </div>
     );

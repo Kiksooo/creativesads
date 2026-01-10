@@ -105,7 +105,7 @@ export default function SettingsPage() {
         title="Error loading settings"
         description={error}
         actionLabel={t(locale, 'common.retry')}
-        onAction={() => router.refresh()}
+        onClick={() => router.refresh()}
       />
     );
   }

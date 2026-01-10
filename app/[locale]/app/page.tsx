@@ -103,7 +103,7 @@ export default function DashboardPage() {
           title="Error loading dashboard"
           description={error}
           actionLabel={t(locale, 'common.retry')}
-          onAction={() => router.refresh()}
+          onClick={() => router.refresh()}
         />
       ) : creatives.length === 0 ? (
         <EmptyState
