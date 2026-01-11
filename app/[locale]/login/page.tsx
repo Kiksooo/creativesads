@@ -10,9 +10,14 @@ import Input from '@/src/components/ui/Input';
 import Alert from '@/src/components/ui/Alert';
 import Spinner from '@/src/components/ui/Spinner';
 import { notFound } from 'next/navigation';
-import { parseApiError } from '@/src/lib/http';
 import { setToken } from '@/src/lib/auth';
-import { mapErrorMessageToKey } from '@/lib/i18n/errorMapper';
+
+function authErrorKey(status?: number): string {
+  if (status === 409) return "auth.emailExists";
+  if (status === 401) return "auth.invalidCredentials";
+  if (status === 400) return "auth.invalidForm";
+  return "auth.genericError";
+}
 
 export default function LoginPage() {
   const params = useParams();
@@ -51,9 +56,7 @@ export default function LoginPage() {
       });
 
       if (!res.ok) {
-        const errorMsg = await parseApiError(res);
-        const errorKey = mapErrorMessageToKey(errorMsg);
-        setError(t(locale, errorKey));
+        setError(t(locale, authErrorKey(res.status)));
         setLoading(false);
         return;
       }
@@ -71,10 +74,9 @@ export default function LoginPage() {
         setError(t(locale, 'auth.tokenNotFound'));
         setLoading(false);
       }
-    } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : 'Login failed';
-      const errorKey = mapErrorMessageToKey(errorMsg);
-      setError(t(locale, errorKey));
+    } catch (e: any) {
+      const status = e?.response?.status ?? e?.status;
+      setError(t(locale, authErrorKey(status)));
       setLoading(false);
     }
   };

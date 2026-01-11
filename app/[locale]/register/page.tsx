@@ -5,12 +5,16 @@ import { useParams } from "next/navigation";
 
 import { useMemo, useState, useId } from "react";
 
-import { parseApiError } from "@/src/lib/http";
-
 import { setToken } from "@/src/lib/auth";
 import { isValidLocale, t } from "@/lib/i18n/messages";
-import { mapErrorMessageToKey } from "@/lib/i18n/errorMapper";
 import { notFound } from "next/navigation";
+
+function authErrorKey(status?: number): string {
+  if (status === 409) return "auth.emailExists";
+  if (status === 401) return "auth.invalidCredentials";
+  if (status === 400) return "auth.invalidForm";
+  return "auth.genericError";
+}
 
 export default function RegisterPage() {
   const params = useParams();
@@ -49,9 +53,8 @@ export default function RegisterPage() {
       });
 
       if (!res.ok) {
-        const errorMsg = await parseApiError(res);
-        const errorKey = mapErrorMessageToKey(errorMsg);
-        setError(t(locale, errorKey));
+        setError(t(locale, authErrorKey(res.status)));
+        setLoading(false);
         return;
       }
 
@@ -59,6 +62,9 @@ export default function RegisterPage() {
       if (data?.token) setToken(data.token);
 
       window.location.href = `/${locale}/app`;
+    } catch (e: any) {
+      const status = e?.response?.status ?? e?.status;
+      setError(t(locale, authErrorKey(status)));
     } finally {
       setLoading(false);
     }

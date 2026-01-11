@@ -264,21 +264,36 @@ export default function CreativeDetailPage() {
                     src={creative.file_url}
                     controls
                     className="w-full rounded-lg"
-                    onError={() => {
+                    preload="metadata"
+                    onError={(e) => {
+                      console.error('[Preview] Video load error:', e);
                       setError(t(locale, 'errors.failedToLoadVideoPreview'));
                     }}
                   >
                     {t(locale, 'creative.videoNotSupported')}
                   </video>
-                ) : (
+                ) : creative.type === 'image' ? (
                   <img
                     src={creative.file_url}
-                    alt={creative.filename}
-                    className="w-full rounded-lg"
-                    onError={() => {
+                    alt={creative.filename || t(locale, 'creative.preview')}
+                    className="w-full rounded-lg object-contain"
+                    onError={(e) => {
+                      console.error('[Preview] Image load error:', e);
                       setError(t(locale, 'errors.failedToLoadImagePreview'));
                     }}
                   />
+                ) : (
+                  <div className="aspect-video bg-gray-100 rounded-lg flex flex-col items-center justify-center gap-4 p-6">
+                    <p className="text-gray-500 text-center">{t(locale, 'errors.fileNotFound')}</p>
+                    <Button
+                      variant="primary"
+                      onClick={() => {
+                        window.location.reload();
+                      }}
+                    >
+                      {t(locale, 'common.refresh')}
+                    </Button>
+                  </div>
                 )
               ) : (
                 <div className="aspect-video bg-gray-100 rounded-lg flex flex-col items-center justify-center gap-4 p-6">
@@ -286,7 +301,7 @@ export default function CreativeDetailPage() {
                   <Button
                     variant="primary"
                     onClick={() => {
-                      window.location.reload();
+                      fetchCreative();
                     }}
                   >
                     {t(locale, 'common.refresh')}
