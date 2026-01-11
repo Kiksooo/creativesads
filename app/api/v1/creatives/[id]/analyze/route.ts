@@ -2,6 +2,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/src/lib/db';
+import type { AnalysisResult } from '@/src/lib/db/adapter';
 import { analyzeCreative, checkAnalysisLimit } from '@/src/lib/ai/analyze';
 import jwt from 'jsonwebtoken';
 
@@ -76,11 +77,23 @@ export async function POST(
     try {
       const analysisResult = await analyzeCreative(creative);
 
-      // Save analysis
-      const analysis = await db.createAnalysisResult({
+      // Save analysis - map camelCase to snake_case and add creative_id
+      const analysisToSave = {
         creative_id: id,
-        ...analysisResult,
-      });
+        score: analysisResult.score,
+        hook_score: analysisResult.hookScore,
+        clarity_score: analysisResult.clarityScore,
+        compliance_risk: analysisResult.complianceRisk,
+        strengths: analysisResult.strengths,
+        issues: analysisResult.issues,
+        fixes: analysisResult.fixes,
+        hooks: analysisResult.hooks,
+        ctas: analysisResult.ctas,
+        script_15s: analysisResult.script15s,
+        summary: analysisResult.summary,
+      } satisfies Omit<AnalysisResult, 'id' | 'created_at'>;
+
+      const analysis = await db.createAnalysisResult(analysisToSave);
 
       // Update creative status to done
       await db.updateCreative(id, { status: 'done' });
