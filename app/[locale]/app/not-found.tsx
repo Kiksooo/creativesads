@@ -2,12 +2,10 @@ import Link from 'next/link';
 import { Card, CardContent } from '@/src/components/ui/Card';
 import Button from '@/src/components/ui/Button';
 
-export default async function AppNotFound({
-  params,
-}: {
-  params: Promise<{ locale: string }>;
-}) {
-  const { locale } = await params;
+export default function AppNotFound() {
+  // Next.js not-found.tsx does not receive params
+  // Use safe default locale
+  const locale = 'en';
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">

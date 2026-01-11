@@ -13,6 +13,8 @@ import { clearToken } from '@/src/lib/auth';
 import Link from 'next/link';
 import Button from '@/src/components/ui/Button';
 
+export const dynamic = 'force-dynamic';
+
 export default function LibraryPage() {
   const params = useParams();
   const router = useRouter();
