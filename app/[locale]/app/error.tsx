@@ -2,9 +2,10 @@
 
 import { useEffect } from 'react';
 import { useParams } from 'next/navigation';
-import { type Locale } from '@/lib/i18n/messages';
+import { type Locale, t } from '@/lib/i18n/messages';
 import Button from '@/src/components/ui/Button';
 import { Card, CardContent } from '@/src/components/ui/Card';
+import { mapErrorMessageToKey } from '@/lib/i18n/errorMapper';
 
 export default function AppError({
   error,
@@ -39,19 +40,22 @@ export default function AppError({
             />
           </svg>
         </div>
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">Something went wrong!</h1>
+        <h1 className="text-2xl font-bold text-gray-900 mb-2">{t(locale, 'errors.serverError')}</h1>
         <p className="text-gray-600 mb-6">
-          {error.message || 'An unexpected error occurred'}
+          {error.message ? (() => {
+            const errorKey = mapErrorMessageToKey(error.message);
+            return t(locale, errorKey);
+          })() : t(locale, 'errors.anErrorOccurred')}
         </p>
         <div className="flex gap-4 justify-center">
           <Button variant="primary" onClick={reset}>
-            Try again
+            {t(locale, 'common.retry')}
           </Button>
           <Button
             variant="secondary"
-            onClick={() => (window.location.href = `/${locale}/app`)}
+            onClick={() => (window.location.href = `/${locale}/app/library`)}
           >
-            Go to Library
+            {t(locale, 'nav.library')}
           </Button>
         </div>
         </CardContent>

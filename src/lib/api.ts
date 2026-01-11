@@ -69,13 +69,15 @@ export async function apiFetch<T = unknown>(
     // Check if response is JSON
     const contentType = res.headers.get('content-type') || '';
     if (!contentType.includes('application/json')) {
+      const text = await res.text().catch(() => '');
       return {
-        error: 'Server error, check logs',
+        error: `Server error (${res.status}): ${text.slice(0, 200) || 'Non-JSON response'}`,
         status: res.status,
       };
     }
 
     if (!res.ok) {
+      // Parse error details from JSON response
       const errorMessage = await parseApiError(res);
       return {
         error: errorMessage,

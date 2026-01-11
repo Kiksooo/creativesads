@@ -8,10 +8,17 @@ import { useMemo, useState, useId } from "react";
 import { parseApiError } from "@/src/lib/http";
 
 import { setToken } from "@/src/lib/auth";
+import { isValidLocale, t } from "@/lib/i18n/messages";
+import { mapErrorMessageToKey } from "@/lib/i18n/errorMapper";
+import { notFound } from "next/navigation";
 
 export default function RegisterPage() {
   const params = useParams();
   const locale = params.locale as string;
+
+  if (!isValidLocale(locale)) {
+    notFound();
+  }
 
   const emailId = useId();
   const passwordId = useId();
@@ -42,7 +49,9 @@ export default function RegisterPage() {
       });
 
       if (!res.ok) {
-        setError(await parseApiError(res));
+        const errorMsg = await parseApiError(res);
+        const errorKey = mapErrorMessageToKey(errorMsg);
+        setError(t(locale, errorKey));
         return;
       }
 
@@ -58,8 +67,8 @@ export default function RegisterPage() {
   return (
     <main className="min-h-screen bg-white">
       <div className="mx-auto max-w-md px-6 py-16">
-        <h1 className="text-4xl font-semibold tracking-tight">Create account</h1>
-        <p className="mt-2 text-black/60">Sign up to get started.</p>
+        <h1 className="text-4xl font-semibold tracking-tight">{t(locale, 'auth.createAccount')}</h1>
+        <p className="mt-2 text-black/60">{t(locale, 'auth.signUpToGetStarted')}</p>
 
         <form onSubmit={onSubmit} className="mt-10 rounded-2xl border border-black/10 bg-white p-6 shadow-sm">
           {error && (
@@ -68,30 +77,31 @@ export default function RegisterPage() {
             </div>
           )}
 
-          <label htmlFor={emailId} className="block text-sm font-medium text-black/70">Email</label>
+          <label htmlFor={emailId} className="block text-sm font-medium text-black/70">{t(locale, 'common.email')}</label>
           <input
             id={emailId}
             className="mt-2 w-full rounded-xl border border-black/10 px-4 py-3 outline-none focus:border-black/30"
-            placeholder="you@team.com"
+            placeholder={t(locale, 'common.email')}
+            // Placeholder не переводим, т.к. это пример email адреса
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             autoComplete="email"
           />
-          <p className="mt-2 text-xs text-black/45">We&apos;ll never share your email.</p>
+          <p className="mt-2 text-xs text-black/45">{t(locale, 'auth.emailNeverShared')}</p>
 
-          <label htmlFor={passwordId} className="mt-6 block text-sm font-medium text-black/70">Password</label>
+          <label htmlFor={passwordId} className="mt-6 block text-sm font-medium text-black/70">{t(locale, 'common.password')}</label>
           <input
             id={passwordId}
             className="mt-2 w-full rounded-xl border border-black/10 px-4 py-3 outline-none focus:border-black/30"
-            placeholder="Minimum 8 characters"
+            placeholder={t(locale, 'auth.passwordMinLength')}
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             autoComplete="new-password"
           />
-          <p className="mt-2 text-xs text-black/45">Must be at least 8 characters.</p>
+          <p className="mt-2 text-xs text-black/45">{t(locale, 'auth.passwordMinLength')}</p>
 
-          <label htmlFor={confirmId} className="mt-6 block text-sm font-medium text-black/70">Confirm password</label>
+          <label htmlFor={confirmId} className="mt-6 block text-sm font-medium text-black/70">{t(locale, 'common.confirmPassword')}</label>
           <input
             id={confirmId}
             className="mt-2 w-full rounded-xl border border-black/10 px-4 py-3 outline-none focus:border-black/30"
@@ -106,13 +116,13 @@ export default function RegisterPage() {
             disabled={!canSubmit || loading}
             className="mt-6 w-full rounded-xl bg-black px-4 py-3 font-medium text-white shadow-sm transition hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-40"
           >
-            {loading ? "Creating..." : "Create account"}
+            {loading ? t(locale, 'auth.creating') : t(locale, 'auth.createAccount')}
           </button>
 
           <div className="mt-6 text-center text-sm text-black/60">
-            Already have an account?{" "}
+            {t(locale, 'auth.alreadyHaveAccount')}{" "}
             <Link className="font-medium text-black underline underline-offset-4" href={`/${locale}/login`}>
-              Sign in
+              {t(locale, 'auth.signIn')}
             </Link>
           </div>
         </form>

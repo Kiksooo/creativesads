@@ -10,20 +10,23 @@ class MemoryDb implements DbAdapter {
 
   // Users
   async getUserByEmail(email: string): Promise<User | null> {
+    const emailNorm = email.trim().toLowerCase();
     for (const user of this.users.values()) {
-      if (user.email === email) {
+      if (user.email.trim().toLowerCase() === emailNorm) {
         return user;
       }
     }
     return null;
   }
 
-  async createUser(email: string): Promise<User> {
+  async createUser(email: string, passwordHash?: string): Promise<User> {
     const id = `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     const now = new Date().toISOString();
+    const emailNorm = email.trim().toLowerCase();
     const user: User = {
       id,
-      email,
+      email: emailNorm,
+      ...(passwordHash && { password_hash: passwordHash }),
       created_at: now,
       updated_at: now,
     };

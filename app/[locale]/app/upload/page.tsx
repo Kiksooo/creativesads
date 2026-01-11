@@ -6,6 +6,7 @@ import { isValidLocale, t } from '@/lib/i18n/messages';
 import { notFound } from 'next/navigation';
 import { apiUpload, apiPost } from '@/src/lib/api';
 import { clearToken } from '@/src/lib/auth';
+import { mapErrorMessageToKey } from '@/lib/i18n/errorMapper';
 import UploadDropzone from '@/src/components/UploadDropzone';
 import Button from '@/src/components/ui/Button';
 import Input from '@/src/components/ui/Input';
@@ -37,7 +38,7 @@ export default function UploadPage() {
 
   const handleUpload = async () => {
     if (!file) {
-      setError('Please select a file');
+      setError(t(locale, 'upload.pleaseSelectFile'));
       return;
     }
 
@@ -70,7 +71,8 @@ export default function UploadPage() {
       }
 
       if (uploadResponse.error) {
-        setError(uploadResponse.error);
+        const errorKey = mapErrorMessageToKey(uploadResponse.error);
+        setError(t(locale, errorKey));
         setState('error');
         return;
       }
@@ -80,7 +82,7 @@ export default function UploadPage() {
       const creativeId = data?.creative?.id || data?.id;
 
       if (!creativeId) {
-        setError('Upload succeeded but no creative ID received');
+        setError(t(locale, 'upload.uploadSucceededNoId'));
         setState('error');
         return;
       }
@@ -88,9 +90,10 @@ export default function UploadPage() {
       setUploadProgress(100);
       setState('processing');
 
-      // Start analysis automatically
+      // Start analysis automatically with language preference
       const analyzeResponse = await apiPost<{ analysis?: unknown }>(
-        `/creatives/${creativeId}/analyze`
+        `/creatives/${creativeId}/analyze`,
+        { language: locale }
       );
 
       if (analyzeResponse.status === 401) {
@@ -111,7 +114,9 @@ export default function UploadPage() {
       // Redirect to detail page
       window.location.href = `/${locale}/app/creatives/${creativeId}`;
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Upload failed');
+      const errorMsg = err instanceof Error ? err.message : 'Upload failed';
+      const errorKey = mapErrorMessageToKey(errorMsg);
+      setError(t(locale, errorKey));
       setState('error');
     }
   };
@@ -135,7 +140,7 @@ export default function UploadPage() {
         <h1 className="text-3xl font-bold text-gray-900 mb-2">
           {t(locale, 'nav.upload')}
         </h1>
-        <p className="text-gray-600">Upload a video or image to get started</p>
+        <p className="text-gray-600">{t(locale, 'upload.getStarted')}</p>
       </div>
 
       <Card className="max-w-2xl mx-auto shadow-lg relative z-10">
@@ -143,7 +148,7 @@ export default function UploadPage() {
           {/* File Upload */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              File *
+              {t(locale, 'upload.file')} {t(locale, 'common.required')}
             </label>
             <UploadDropzone
               onFileSelect={setFile}
@@ -156,42 +161,42 @@ export default function UploadPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Input
             type="text"
-            label="Platform (optional)"
+            label={`${t(locale, 'upload.platform')} ${t(locale, 'common.optional')}`}
             value={platform}
             onChange={(e) => setPlatform(e.target.value)}
-            placeholder="e.g. TikTok, Instagram"
+            placeholder={t(locale, 'upload.platformPlaceholder')}
             disabled={state === 'uploading' || state === 'processing'}
           />
           <Input
             type="text"
-            label={t(locale, 'upload.country') + ' (optional)'}
+            label={`${t(locale, 'upload.country')} ${t(locale, 'common.optional')}`}
             value={geo}
             onChange={(e) => setGeo(e.target.value)}
-            placeholder="e.g. US, UK"
+            placeholder={t(locale, 'upload.countryPlaceholder')}
             disabled={state === 'uploading' || state === 'processing'}
           />
           <Input
             type="text"
-            label="Language (optional)"
+            label={`${t(locale, 'upload.language')} ${t(locale, 'common.optional')}`}
             value={language}
             onChange={(e) => setLanguage(e.target.value)}
-            placeholder="e.g. en, ru"
+            placeholder={t(locale, 'upload.languagePlaceholder')}
             disabled={state === 'uploading' || state === 'processing'}
           />
           <Input
             type="text"
-            label="Vertical (optional)"
+            label={`${t(locale, 'upload.vertical')} ${t(locale, 'common.optional')}`}
             value={vertical}
             onChange={(e) => setVertical(e.target.value)}
-            placeholder="e.g. Fashion, Tech"
+            placeholder={t(locale, 'upload.verticalPlaceholder')}
             disabled={state === 'uploading' || state === 'processing'}
           />
           <Input
             type="text"
-            label={t(locale, 'upload.goal') + ' (optional)'}
+            label={`${t(locale, 'upload.goal')} ${t(locale, 'common.optional')}`}
             value={goal}
             onChange={(e) => setGoal(e.target.value)}
-            placeholder="e.g. Brand awareness, Conversions"
+            placeholder={t(locale, 'upload.goalPlaceholder')}
             disabled={state === 'uploading' || state === 'processing'}
           />
         </div>
@@ -200,7 +205,7 @@ export default function UploadPage() {
           {state === 'uploading' && (
             <div className="space-y-3">
               <div className="flex items-center justify-between text-sm text-gray-600">
-                <span>Uploading...</span>
+                <span>{t(locale, 'upload.uploading')}</span>
                 <span className="font-medium">{uploadProgress}%</span>
               </div>
               <div className="w-full bg-gray-200 rounded-full h-2.5 overflow-hidden">
@@ -215,7 +220,7 @@ export default function UploadPage() {
           {state === 'processing' && (
             <div className="flex items-center gap-3 text-gray-700">
               <Spinner size="sm" />
-              <span className="font-medium">Processing creative...</span>
+              <span className="font-medium">{t(locale, 'upload.processingCreative')}</span>
             </div>
           )}
 
@@ -238,12 +243,12 @@ export default function UploadPage() {
               {state === 'uploading' ? (
                 <span className="flex items-center justify-center gap-2">
                   <Spinner size="sm" />
-                  Uploading...
+                  {t(locale, 'upload.uploading')}
                 </span>
               ) : state === 'processing' ? (
                 <span className="flex items-center justify-center gap-2">
                   <Spinner size="sm" />
-                  Processing...
+                  {t(locale, 'upload.processing')}
                 </span>
               ) : (
                 t(locale, 'nav.upload')
@@ -265,7 +270,7 @@ export default function UploadPage() {
                   setUploadProgress(0);
                 }}
               >
-                Reset
+                {t(locale, 'common.reset')}
               </Button>
             )}
           </div>

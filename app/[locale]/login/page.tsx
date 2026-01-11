@@ -12,6 +12,7 @@ import Spinner from '@/src/components/ui/Spinner';
 import { notFound } from 'next/navigation';
 import { parseApiError } from '@/src/lib/http';
 import { setToken } from '@/src/lib/auth';
+import { mapErrorMessageToKey } from '@/lib/i18n/errorMapper';
 
 export default function LoginPage() {
   const params = useParams();
@@ -34,7 +35,7 @@ export default function LoginPage() {
     setError(null);
 
     if (!email || !password) {
-      setError('Please fill in all fields');
+      setError(t(locale, 'auth.pleaseFillAllFields'));
       return;
     }
 
@@ -50,7 +51,9 @@ export default function LoginPage() {
       });
 
       if (!res.ok) {
-        setError(await parseApiError(res));
+        const errorMsg = await parseApiError(res);
+        const errorKey = mapErrorMessageToKey(errorMsg);
+        setError(t(locale, errorKey));
         setLoading(false);
         return;
       }
@@ -65,11 +68,13 @@ export default function LoginPage() {
         // Redirect to dashboard
         window.location.href = `/${locale}/app`;
       } else {
-        setError('Token not found in response');
+        setError(t(locale, 'auth.tokenNotFound'));
         setLoading(false);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Login failed');
+      const errorMsg = err instanceof Error ? err.message : 'Login failed';
+      const errorKey = mapErrorMessageToKey(errorMsg);
+      setError(t(locale, errorKey));
       setLoading(false);
     }
   };
@@ -78,9 +83,9 @@ export default function LoginPage() {
     <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-20 relative z-10">
       <div className="text-center mb-10">
         <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-3">
-          Sign In
+          {t(locale, 'auth.signIn')}
         </h1>
-        <p className="text-lg text-gray-600">Welcome back</p>
+        <p className="text-lg text-gray-600">{t(locale, 'auth.welcomeBack')}</p>
       </div>
 
       <Card className="max-w-md mx-auto shadow-lg">
@@ -92,7 +97,7 @@ export default function LoginPage() {
               label={t(locale, 'common.email')}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@example.com"
+              placeholder={t(locale, 'common.email')}
               required
               disabled={loading}
               autoComplete="email"
@@ -101,10 +106,10 @@ export default function LoginPage() {
             <Input
               id={passwordId}
               type="password"
-              label="Password"
+              label={t(locale, 'common.password')}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="Enter your password"
+              placeholder={t(locale, 'common.password')}
               required
               disabled={loading}
               autoComplete="current-password"
@@ -126,21 +131,21 @@ export default function LoginPage() {
               {loading ? (
                 <span className="flex items-center justify-center gap-2">
                   <Spinner size="sm" />
-                  Signing in...
+                  {t(locale, 'auth.signingIn')}
                 </span>
               ) : (
-                'Sign in'
+                t(locale, 'auth.signIn')
               )}
             </Button>
 
             <div className="text-center pt-4 border-t border-gray-200">
               <p className="text-sm text-gray-600">
-                Don&apos;t have an account?{' '}
+                {t(locale, 'auth.dontHaveAccount')}{' '}
                 <Link
                   href={`/${locale}/register`}
                   className="text-black font-medium hover:underline"
                 >
-                  Create account
+                  {t(locale, 'auth.createAccount')}
                 </Link>
               </p>
             </div>

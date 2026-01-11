@@ -38,6 +38,7 @@ export interface AnalysisResult {
 export interface User {
   id: string;
   email: string;
+  password_hash?: string; // Optional for backward compatibility
   created_at: string;
   updated_at: string;
 }
@@ -51,7 +52,7 @@ export interface UserUsage {
 export interface DbAdapter {
   // Users
   getUserByEmail(email: string): Promise<User | null>;
-  createUser(email: string): Promise<User>;
+  createUser(email: string, passwordHash?: string): Promise<User>;
   getUserById(id: string): Promise<User | null>;
 
   // Creatives

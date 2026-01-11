@@ -12,6 +12,7 @@ import { type Creative } from '@/src/components/CreativeCard';
 import { clearToken } from '@/src/lib/auth';
 import Link from 'next/link';
 import Button from '@/src/components/ui/Button';
+import { mapErrorMessageToKey } from '@/lib/i18n/errorMapper';
 
 export const dynamic = 'force-dynamic';
 
@@ -57,7 +58,9 @@ export default function LibraryPage() {
         const items = data?.creatives || data?.data || (Array.isArray(data) ? data : []);
         setCreatives(items);
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'An error occurred');
+        const errorMsg = err instanceof Error ? err.message : 'An error occurred';
+        const errorKey = mapErrorMessageToKey(errorMsg);
+        setError(t(locale, errorKey));
       } finally {
         setLoading(false);
       }
@@ -74,8 +77,8 @@ export default function LibraryPage() {
         </div>
         <EmptyState
           title={t(locale, 'auth.sessionExpired')}
-          description="Please login again to continue."
-          actionLabel="Login"
+          description={t(locale, 'auth.pleaseLoginAgain')}
+          actionLabel={t(locale, 'auth.login')}
           actionHref={`/${locale}/login`}
         />
       </div>
@@ -88,7 +91,7 @@ export default function LibraryPage() {
         <div className="mb-8 flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold text-gray-900 mb-2">{t(locale, 'nav.library')}</h1>
-            <p className="text-gray-600">Your creative library</p>
+            <p className="text-gray-600">{t(locale, 'library.description')}</p>
           </div>
         </div>
         <LoadingGrid count={8} />
@@ -103,7 +106,7 @@ export default function LibraryPage() {
           <h1 className="text-3xl font-bold text-gray-900 mb-2">{t(locale, 'nav.library')}</h1>
         </div>
         <EmptyState
-          title="Error loading library"
+          title={t(locale, 'errors.failedToLoadLibrary')}
           description={error}
           actionLabel={t(locale, 'common.retry')}
           onClick={() => router.refresh()}
@@ -119,8 +122,8 @@ export default function LibraryPage() {
           <h1 className="text-3xl font-bold text-gray-900 mb-2">{t(locale, 'nav.library')}</h1>
           <p className="text-gray-600">
             {creatives.length > 0
-              ? `${creatives.length} creative${creatives.length !== 1 ? 's' : ''}`
-              : 'Your creative library'}
+              ? `${creatives.length} ${creatives.length !== 1 ? t(locale, 'creative.creativesCount') : t(locale, 'creative.creativeCount')}`
+              : t(locale, 'library.description')}
           </p>
         </div>
         <Link href={`/${locale}/app/upload`}>
@@ -132,8 +135,8 @@ export default function LibraryPage() {
 
       {creatives.length === 0 ? (
         <EmptyState
-          title="No creatives yet"
-          description="Get started by uploading your first creative."
+          title={t(locale, 'creative.noCreativesYet')}
+          description={t(locale, 'creative.getStartedDescription')}
           actionLabel={t(locale, 'common.upload')}
           actionHref={`/${locale}/app/upload`}
         />

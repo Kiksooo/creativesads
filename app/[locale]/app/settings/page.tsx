@@ -6,6 +6,7 @@ import { isValidLocale, t } from '@/lib/i18n/messages';
 import { notFound } from 'next/navigation';
 import { apiGet } from '@/src/lib/api';
 import { clearToken, getToken } from '@/src/lib/auth';
+import { mapErrorMessageToKey } from '@/lib/i18n/errorMapper';
 import { Card, CardContent } from '@/src/components/ui/Card';
 import Button from '@/src/components/ui/Button';
 import Input from '@/src/components/ui/Input';
@@ -66,7 +67,9 @@ export default function SettingsPage() {
           }
         }
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load settings');
+        const errorMsg = err instanceof Error ? err.message : 'Failed to load settings';
+        const errorKey = mapErrorMessageToKey(errorMsg);
+        setError(t(locale, errorKey));
       } finally {
         setLoading(false);
       }
@@ -84,8 +87,8 @@ export default function SettingsPage() {
     return (
       <EmptyState
         title={t(locale, 'auth.sessionExpired')}
-        description="Please login again to continue."
-        actionLabel="Login"
+        description={t(locale, 'auth.pleaseLoginAgain')}
+        actionLabel={t(locale, 'auth.login')}
         actionHref={`/${locale}/login`}
       />
     );
@@ -101,12 +104,12 @@ export default function SettingsPage() {
 
   if (error && !user) {
     return (
-      <EmptyState
-        title="Error loading settings"
-        description={error}
-        actionLabel={t(locale, 'common.retry')}
-        onClick={() => router.refresh()}
-      />
+        <EmptyState
+          title={t(locale, 'errors.failedToLoadSettings')}
+          description={error}
+          actionLabel={t(locale, 'common.retry')}
+          onClick={() => router.refresh()}
+        />
     );
   }
 
@@ -114,7 +117,7 @@ export default function SettingsPage() {
     <div className="max-w-4xl mx-auto">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900 mb-2">{t(locale, 'settings.title')}</h1>
-        <p className="text-gray-600">Manage your account and preferences</p>
+        <p className="text-gray-600">{t(locale, 'settings.description')}</p>
       </div>
 
       <div className="space-y-6">
@@ -125,17 +128,17 @@ export default function SettingsPage() {
             {user && (
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">{t(locale, 'settings.email')}</label>
                   <Input
                     type="email"
                     value={user.email}
                     disabled
                     className="bg-gray-50"
                   />
-                  <p className="mt-1 text-xs text-gray-500">Email cannot be changed</p>
+                  <p className="mt-1 text-xs text-gray-500">{t(locale, 'settings.emailCannotChanged')}</p>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">User ID</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">{t(locale, 'settings.userId')}</label>
                   <Input
                     type="text"
                     value={user.id}
@@ -155,17 +158,17 @@ export default function SettingsPage() {
             <div className="space-y-4">
               <div className="flex items-center justify-between py-3 border-b border-gray-200">
                 <div>
-                  <p className="text-sm font-medium text-gray-900">Account Type</p>
-                  <p className="text-xs text-gray-500">Free tier</p>
+                  <p className="text-sm font-medium text-gray-900">{t(locale, 'settings.accountType')}</p>
+                  <p className="text-xs text-gray-500">{t(locale, 'settings.freeTier')}</p>
                 </div>
-                <Badge variant="blue">Free</Badge>
+                <Badge variant="blue">{t(locale, 'settings.free')}</Badge>
               </div>
               {usage && (
                 <div className="flex items-center justify-between py-3 border-b border-gray-200">
                   <div>
-                    <p className="text-sm font-medium text-gray-900">Daily Analysis Limit</p>
+                    <p className="text-sm font-medium text-gray-900">{t(locale, 'settings.dailyAnalysisLimit')}</p>
                     <p className="text-xs text-gray-500">
-                      {usage.count} of {usage.limit} analyses used today
+                      {usage.count} {t(locale, 'settings.of')} {usage.limit} {t(locale, 'settings.analysesUsedToday')}
                     </p>
                   </div>
                   <div className="w-24 bg-gray-200 rounded-full h-2">
@@ -192,24 +195,24 @@ export default function SettingsPage() {
             <h2 className="text-lg font-semibold text-gray-900 mb-4">{t(locale, 'settings.limits')}</h2>
             <div className="space-y-3">
               <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                <span className="text-sm text-gray-700">Free tier includes:</span>
+                <span className="text-sm text-gray-700">{t(locale, 'settings.freeTierIncludes')}</span>
               </div>
               <ul className="space-y-2 ml-4">
                 <li className="text-sm text-gray-600 flex items-center gap-2">
                   <span className="text-green-500">✓</span>
-                  Up to 3 AI analyses per day
+                  {t(locale, 'settings.upTo3Analyses')}
                 </li>
                 <li className="text-sm text-gray-600 flex items-center gap-2">
                   <span className="text-green-500">✓</span>
-                  Image and video uploads
+                  {t(locale, 'settings.imageVideoUploads')}
                 </li>
                 <li className="text-sm text-gray-600 flex items-center gap-2">
                   <span className="text-green-500">✓</span>
-                  Basic AI insights
+                  {t(locale, 'settings.basicInsights')}
                 </li>
                 <li className="text-sm text-gray-600 flex items-center gap-2">
                   <span className="text-gray-400">○</span>
-                  Advanced analytics (coming soon)
+                  {t(locale, 'settings.advancedAnalytics')}
                 </li>
               </ul>
             </div>
@@ -219,15 +222,15 @@ export default function SettingsPage() {
         {/* Danger Zone */}
         <Card>
           <CardContent className="p-6">
-            <h2 className="text-lg font-semibold text-red-600 mb-4">Danger Zone</h2>
+            <h2 className="text-lg font-semibold text-red-600 mb-4">{t(locale, 'settings.dangerZone')}</h2>
             <div className="space-y-4">
               <div className="flex items-center justify-between p-4 bg-red-50 rounded-lg border border-red-200">
                 <div>
-                  <p className="text-sm font-medium text-red-900">Sign out</p>
-                  <p className="text-xs text-red-700 mt-1">Sign out from your account</p>
+                  <p className="text-sm font-medium text-red-900">{t(locale, 'settings.signOut')}</p>
+                  <p className="text-xs text-red-700 mt-1">{t(locale, 'settings.signOutDescription')}</p>
                 </div>
                 <Button variant="secondary" onClick={handleLogout}>
-                  Sign Out
+                  {t(locale, 'settings.signOutButton')}
                 </Button>
               </div>
             </div>

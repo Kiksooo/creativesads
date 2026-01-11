@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { Locale, t, locales } from '@/lib/i18n/messages';
 import { getToken, clearToken } from '@/src/lib/auth';
+import { switchLocalePath } from '@/lib/i18n/switchLocalePath';
 import Button from './ui/Button';
 
 interface AppHeaderProps {
@@ -28,11 +29,9 @@ export default function AppHeader({ locale }: AppHeaderProps) {
     router.push(`/${locale}/login`);
   };
 
-  // Extract path without locale (handle root and nested paths)
-  let pathWithoutLocale = pathname?.replace(`/${locale}`, '') || '/';
-  if (pathWithoutLocale === '') {
-    pathWithoutLocale = '/';
-  }
+  // Extract path without locale using helper
+  const currentPath = pathname || '/';
+  const pathWithoutLocale = currentPath.replace(`/${locale}`, '') || '/';
 
   if (!mounted) {
     return (
@@ -105,13 +104,13 @@ export default function AppHeader({ locale }: AppHeaderProps) {
                 onClick={handleLogout}
                 className="text-sm"
               >
-                Logout
+                {t(locale, 'common.logout')}
               </Button>
             ) : (
               <>
                 <Link href={`/${locale}/login`}>
                   <Button variant="ghost" size="sm" className="text-sm">
-                    Login
+                    {t(locale, 'auth.login')}
                   </Button>
                 </Link>
                 <Link href={`/${locale}/register`}>
@@ -124,21 +123,24 @@ export default function AppHeader({ locale }: AppHeaderProps) {
 
             {/* Language Switcher */}
             <div className="flex items-center space-x-1 border-l border-gray-200 pl-4 ml-2">
-              {locales.map((loc) => (
-                <Link
-                  key={loc}
-                  href={`/${loc}${pathWithoutLocale}`}
-                  className={`
-                    px-2.5 py-1 rounded-lg text-xs font-medium transition-colors
-                    ${locale === loc
-                      ? 'bg-black text-white'
-                      : 'text-gray-600 hover:text-black hover:bg-gray-100'
-                    }
-                  `}
-                >
-                  {loc.toUpperCase()}
-                </Link>
-              ))}
+              {locales.map((loc) => {
+                const newPath = switchLocalePath(currentPath, loc);
+                return (
+                  <Link
+                    key={loc}
+                    href={newPath}
+                    className={`
+                      px-2.5 py-1 rounded-lg text-xs font-medium transition-colors
+                      ${locale === loc
+                        ? 'bg-black text-white'
+                        : 'text-gray-600 hover:text-black hover:bg-gray-100'
+                      }
+                    `}
+                  >
+                    {loc.toUpperCase()}
+                  </Link>
+                );
+              })}
             </div>
           </div>
         </div>

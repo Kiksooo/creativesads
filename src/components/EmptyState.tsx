@@ -9,6 +9,8 @@ interface EmptyStateProps {
   onClick?: () => void;
 }
 
+// Note: EmptyState is used with explicit title/description props from parent components
+// Default values are only fallback, parents should provide translated strings via t()
 export default function EmptyState({
   title = 'No items found',
   description = 'Get started by creating your first item.',

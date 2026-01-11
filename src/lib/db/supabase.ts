@@ -37,20 +37,27 @@ class SupabaseDb implements DbAdapter {
 
   // Users
   async getUserByEmail(email: string): Promise<User | null> {
+    const emailNorm = email.trim().toLowerCase();
     const { data, error } = await this.client
       .from('users')
       .select('*')
-      .eq('email', email)
+      .eq('email', emailNorm)
       .single();
 
     if (error || !data) return null;
     return data as User;
   }
 
-  async createUser(email: string): Promise<User> {
+  async createUser(email: string, passwordHash?: string): Promise<User> {
+    const emailNorm = email.trim().toLowerCase();
+    const insertData: { email: string; password_hash?: string } = { email: emailNorm };
+    if (passwordHash) {
+      insertData.password_hash = passwordHash;
+    }
+    
     const { data, error } = await this.client
       .from('users')
-      .insert({ email })
+      .insert(insertData)
       .select()
       .single();
 

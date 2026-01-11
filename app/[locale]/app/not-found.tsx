@@ -1,11 +1,12 @@
 import Link from 'next/link';
 import { Card, CardContent } from '@/src/components/ui/Card';
 import Button from '@/src/components/ui/Button';
+import { t, type Locale } from '@/lib/i18n/messages';
 
 export default function AppNotFound() {
   // Next.js not-found.tsx does not receive params
   // Use safe default locale
-  const locale = 'en';
+  const locale: Locale = 'en';
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
@@ -27,13 +28,13 @@ export default function AppNotFound() {
           </svg>
         </div>
         <h1 className="text-4xl font-bold text-gray-900 mb-4">404</h1>
-        <h2 className="text-xl font-semibold text-gray-700 mb-4">Page Not Found</h2>
+        <h2 className="text-xl font-semibold text-gray-700 mb-4">{t(locale, 'errors.notFound')}</h2>
         <p className="text-gray-600 mb-8">
-          The page you are looking for does not exist.
+          {t(locale, 'creative.notFoundDescription')}
         </p>
-        <Link href={`/${locale}/app`} className="inline-block w-full relative z-10">
+        <Link href={`/${locale}/app/library`} className="inline-block w-full relative z-10">
           <Button variant="primary" size="lg" className="w-full">
-            Go to Library
+            {t(locale, 'nav.library')}
           </Button>
         </Link>
         </CardContent>

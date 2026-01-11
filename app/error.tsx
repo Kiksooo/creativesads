@@ -3,6 +3,8 @@
 import { useEffect } from 'react';
 import Button from '@/src/components/ui/Button';
 import { Card, CardContent } from '@/src/components/ui/Card';
+import { t, type Locale, isValidLocale } from '@/lib/i18n/messages';
+import { mapErrorMessageToKey } from '@/lib/i18n/errorMapper';
 
 export default function Error({
   error,
@@ -14,6 +16,11 @@ export default function Error({
   useEffect(() => {
     console.error(error);
   }, [error]);
+
+  // Default locale for root error page
+  const locale: Locale = 'en';
+  const errorKey = error.message ? mapErrorMessageToKey(error.message) : 'errors.anErrorOccurred';
+  const errorMessage = error.message ? t(locale, errorKey) : t(locale, 'errors.anErrorOccurred');
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4 relative z-10">
@@ -35,21 +42,21 @@ export default function Error({
             </svg>
           </div>
           <h1 className="text-4xl font-bold text-gray-900 mb-4">
-            Something went wrong!
+            {t(locale, 'errors.serverError')}
           </h1>
           <p className="text-gray-600 mb-8">
-            {error.message || 'An unexpected error occurred'}
+            {errorMessage}
           </p>
           <div className="flex gap-4 justify-center">
             <Button variant="primary" size="lg" onClick={reset}>
-              Try again
+              {t(locale, 'common.retry')}
             </Button>
             <Button
               variant="secondary"
               size="lg"
               onClick={() => (window.location.href = '/en')}
             >
-              Go to Home
+              {t(locale, 'nav.home')}
             </Button>
           </div>
         </CardContent>

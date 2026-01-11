@@ -4,6 +4,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { db } from '@/src/lib/db';
 import { generateToken } from '@/src/lib/auth/jwt';
+import bcrypt from 'bcryptjs';
+import { logApiRequest, createErrorResponse } from '@/src/lib/api-logger';
 
 const loginSchema = z.object({
   email: z.string().email('Invalid email format'),
@@ -96,53 +98,106 @@ export async function DELETE() {
 }
 
 export async function POST(request: NextRequest) {
+  const method = 'POST';
+  const path = '/api/auth/login';
+  
   try {
     let body;
     try {
       body = await request.json();
     } catch (parseError) {
-      return NextResponse.json(
-        { error: 'Invalid JSON in request body' },
-        {
-          status: 400,
-          headers: { 'Content-Type': 'application/json' }
-        }
-      );
+      const response = createErrorResponse('INVALID_JSON', 'Invalid JSON in request body', 400);
+      logApiRequest(method, path, 400);
+      return NextResponse.json(response, {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' }
+      });
     }
 
     const validated = loginSchema.safeParse(body);
 
     if (!validated.success) {
-      return NextResponse.json(
-        { error: validated.error.errors[0].message },
-        { 
-          status: 400,
-          headers: { 'Content-Type': 'application/json' }
-        }
+      const response = createErrorResponse(
+        'VALIDATION_ERROR',
+        validated.error.errors[0].message,
+        400,
+        validated.error.errors
       );
+      logApiRequest(method, path, 400);
+      return NextResponse.json(response, { 
+        status: 400,
+        headers: { 'Content-Type': 'application/json' }
+      });
     }
 
     const { email, password } = validated.data;
+    
+    // Normalize email
+    const emailNorm = email.trim().toLowerCase();
+
+    // Log login attempt (without password)
+    console.log(`[Auth Login] Attempt for email: ${emailNorm}`);
 
     // Find user
-    const user = await db.getUserByEmail(email);
+    const user = await db.getUserByEmail(emailNorm);
     if (!user) {
-      return NextResponse.json(
-        { error: 'Invalid email or password' },
-        { 
-          status: 401,
-          headers: { 'Content-Type': 'application/json' }
-        }
+      // User not found - return 404
+      console.log(`[Auth Login] User not found for email: ${emailNorm}`);
+      const response = createErrorResponse(
+        'USER_NOT_FOUND',
+        'User not found',
+        404
       );
+      logApiRequest(method, path, 404, 'user not found');
+      return NextResponse.json(response, { 
+        status: 404,
+        headers: { 'Content-Type': 'application/json' }
+      });
     }
 
-    // For MVP: Allow login if user exists (no password check for in-memory DB)
-    // In production with Supabase, use Supabase Auth
-    // In real app, check password: const passwordMatch = await bcrypt.compare(password, user.password_hash);
+    // Log user found
+    console.log(`[Auth Login] User found: id=${user.id}, hasPasswordHash=${!!user.password_hash}`);
+
+    // Check password
+    if (!user.password_hash) {
+      // User exists but has no password hash (legacy user)
+      console.log(`[Auth Login] User ${user.id} has no password_hash`);
+      const response = createErrorResponse(
+        'INVALID_PASSWORD',
+        'Invalid password',
+        401
+      );
+      logApiRequest(method, path, 401, 'password hash missing');
+      return NextResponse.json(response, { 
+        status: 401,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+
+    // Compare password
+    const passwordMatch = await bcrypt.compare(password, user.password_hash);
+    if (!passwordMatch) {
+      // Invalid password - return 401
+      console.log(`[Auth Login] Password mismatch for user ${user.id}`);
+      const response = createErrorResponse(
+        'INVALID_PASSWORD',
+        'Invalid password',
+        401
+      );
+      logApiRequest(method, path, 401, 'password mismatch');
+      return NextResponse.json(response, { 
+        status: 401,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+
+    // Password matches - success
+    console.log(`[Auth Login] Success for user ${user.id}`);
 
     // Generate token
     const token = generateToken(user.id, user.email);
 
+    logApiRequest(method, path, 200);
     return NextResponse.json(
       {
         token,
@@ -157,14 +212,17 @@ export async function POST(request: NextRequest) {
       }
     );
   } catch (error) {
-    console.error('Login error:', error);
-    return NextResponse.json(
-      { error: 'Login failed' },
-      { 
-        status: 500,
-        headers: { 'Content-Type': 'application/json' }
-      }
+    const response = createErrorResponse(
+      'LOGIN_ERROR',
+      'Login failed',
+      500,
+      error instanceof Error ? { message: error.message, stack: error.stack } : String(error)
     );
+    logApiRequest(method, path, 500, error);
+    return NextResponse.json(response, { 
+      status: 500,
+      headers: { 'Content-Type': 'application/json' }
+    });
   }
 }
 

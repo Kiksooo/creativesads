@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { db } from '@/src/lib/db';
 import { generateToken } from '@/src/lib/auth/jwt';
 import bcrypt from 'bcryptjs';
+import { logApiRequest, createErrorResponse } from '@/src/lib/api-logger';
 
 const registerSchema = z.object({
   email: z.string().email('Invalid email format'),
@@ -12,51 +13,79 @@ const registerSchema = z.object({
 });
 
 export async function POST(request: NextRequest) {
+  const method = 'POST';
+  const path = '/api/v1/auth/register';
+  
   try {
     const body = await request.json();
     const validated = registerSchema.safeParse(body);
 
     if (!validated.success) {
-      return NextResponse.json(
-        { error: validated.error.errors[0].message },
-        { status: 400 }
+      const response = createErrorResponse(
+        'VALIDATION_ERROR',
+        validated.error.errors[0].message,
+        400,
+        validated.error.errors
       );
+      logApiRequest(method, path, 400);
+      return NextResponse.json(response, { 
+        status: 400,
+        headers: { 'Content-Type': 'application/json' }
+      });
     }
 
     const { email, password } = validated.data;
+    
+    // Normalize email
+    const emailNorm = email.trim().toLowerCase();
 
     // Check if user exists
-    const existingUser = await db.getUserByEmail(email);
+    const existingUser = await db.getUserByEmail(emailNorm);
     if (existingUser) {
-      return NextResponse.json(
-        { error: 'User with this email already exists' },
-        { status: 409 }
+      const response = createErrorResponse(
+        'USER_EXISTS',
+        'User with this email already exists',
+        409
       );
+      logApiRequest(method, path, 409);
+      return NextResponse.json(response, { 
+        status: 409,
+        headers: { 'Content-Type': 'application/json' }
+      });
     }
 
     // Hash password
     const passwordHash = await bcrypt.hash(password, 10);
 
-    // Create user (for now, we'll store password hash if using in-memory)
-    // In Supabase, you'd handle this through Supabase Auth, but for MVP we use simple approach
-    const user = await db.createUser(email);
+    // Create user with password hash
+    const user = await db.createUser(emailNorm, passwordHash);
 
     // Generate token
     const token = generateToken(user.id, user.email);
 
+    logApiRequest(method, path, 201);
     return NextResponse.json({
       token,
       user: {
         id: user.id,
         email: user.email,
       },
+    }, {
+      status: 201,
+      headers: { 'Content-Type': 'application/json' }
     });
   } catch (error) {
-    console.error('Register error:', error);
-    return NextResponse.json(
-      { error: 'Registration failed' },
-      { status: 500 }
+    const response = createErrorResponse(
+      'REGISTRATION_ERROR',
+      'Registration failed',
+      500,
+      error instanceof Error ? { message: error.message, stack: error.stack } : String(error)
     );
+    logApiRequest(method, path, 500, error);
+    return NextResponse.json(response, { 
+      status: 500,
+      headers: { 'Content-Type': 'application/json' }
+    });
   }
 }
 

@@ -4,6 +4,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { db } from '@/src/lib/db';
 import { generateToken } from '@/src/lib/auth/jwt';
+import bcrypt from 'bcryptjs';
+import { logApiRequest, createErrorResponse } from '@/src/lib/api-logger';
 
 const registerSchema = z.object({
   email: z.string().email('Invalid email format'),
@@ -96,53 +98,74 @@ export async function DELETE() {
 }
 
 export async function POST(request: NextRequest) {
+  const method = 'POST';
+  const path = '/api/auth/register';
+  
   try {
     let body;
     try {
       body = await request.json();
     } catch (parseError) {
-      return NextResponse.json(
-        { error: 'Invalid JSON in request body' },
-        {
-          status: 400,
-          headers: { 'Content-Type': 'application/json' }
-        }
-      );
+      const response = createErrorResponse('INVALID_JSON', 'Invalid JSON in request body', 400);
+      logApiRequest(method, path, 400);
+      return NextResponse.json(response, {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' }
+      });
     }
 
     const validated = registerSchema.safeParse(body);
 
     if (!validated.success) {
-      return NextResponse.json(
-        { error: validated.error.errors[0].message },
-        { 
-          status: 400,
-          headers: { 'Content-Type': 'application/json' }
-        }
+      const response = createErrorResponse(
+        'VALIDATION_ERROR',
+        validated.error.errors[0].message,
+        400,
+        validated.error.errors
       );
+      logApiRequest(method, path, 400);
+      return NextResponse.json(response, { 
+        status: 400,
+        headers: { 'Content-Type': 'application/json' }
+      });
     }
 
     const { email, password } = validated.data;
+    
+    // Normalize email
+    const emailNorm = email.trim().toLowerCase();
+
+    // Log registration attempt (without password)
+    console.log(`[Auth Register] Attempt for email: ${emailNorm}`);
 
     // Check if user exists
-    const existingUser = await db.getUserByEmail(email);
+    const existingUser = await db.getUserByEmail(emailNorm);
     if (existingUser) {
-      return NextResponse.json(
-        { error: 'User with this email already exists' },
-        { 
-          status: 409,
-          headers: { 'Content-Type': 'application/json' }
-        }
+      console.log(`[Auth Register] User already exists: id=${existingUser.id}`);
+      const response = createErrorResponse(
+        'USER_EXISTS',
+        'User with this email already exists',
+        409
       );
+      logApiRequest(method, path, 409);
+      return NextResponse.json(response, { 
+        status: 409,
+        headers: { 'Content-Type': 'application/json' }
+      });
     }
 
-    // Create user (password hash is stored internally for in-memory DB)
-    // In production with Supabase, you'd use Supabase Auth
-    const user = await db.createUser(email);
+    // Hash password with bcrypt (10 rounds)
+    const passwordHash = await bcrypt.hash(password, 10);
+    console.log(`[Auth Register] Password hashed successfully, hash length: ${passwordHash.length}`);
+
+    // Create user with password hash
+    const user = await db.createUser(emailNorm, passwordHash);
+    console.log(`[Auth Register] User created: id=${user.id}, hasPasswordHash=${!!user.password_hash}`);
 
     // Generate token
     const token = generateToken(user.id, user.email);
 
+    logApiRequest(method, path, 201);
     return NextResponse.json(
       {
         token,
@@ -157,14 +180,17 @@ export async function POST(request: NextRequest) {
       }
     );
   } catch (error) {
-    console.error('Register error:', error);
-    return NextResponse.json(
-      { error: 'Registration failed' },
-      { 
-        status: 500,
-        headers: { 'Content-Type': 'application/json' }
-      }
+    const response = createErrorResponse(
+      'REGISTRATION_ERROR',
+      'Registration failed',
+      500,
+      error instanceof Error ? { message: error.message, stack: error.stack } : String(error)
     );
+    logApiRequest(method, path, 500, error);
+    return NextResponse.json(response, { 
+      status: 500,
+      headers: { 'Content-Type': 'application/json' }
+    });
   }
 }
 

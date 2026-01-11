@@ -1,8 +1,10 @@
 import Link from 'next/link';
 import { Card, CardContent } from '@/src/components/ui/Card';
 import Button from '@/src/components/ui/Button';
+import { t, type Locale } from '@/lib/i18n/messages';
 
 export default function NotFound() {
+  const locale: Locale = 'en';
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4 relative z-10">
       <Card className="max-w-md w-full shadow-lg relative z-10">
@@ -24,14 +26,14 @@ export default function NotFound() {
           </div>
           <h1 className="text-6xl font-bold text-gray-900 mb-4">404</h1>
           <h2 className="text-2xl font-semibold text-gray-700 mb-4">
-            Page Not Found
+            {t(locale, 'errors.notFound')}
           </h2>
           <p className="text-gray-600 mb-8">
-            The page you are looking for does not exist.
+            {t(locale, 'creative.notFoundDescription')}
           </p>
           <Link href="/en" className="inline-block relative z-10">
             <Button variant="primary" size="lg">
-              Go to Home
+              {t(locale, 'nav.home')}
             </Button>
           </Link>
         </CardContent>

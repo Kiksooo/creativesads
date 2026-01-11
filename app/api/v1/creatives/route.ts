@@ -5,6 +5,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/src/lib/db';
 import { verifyToken } from '@/src/lib/auth/jwt';
 import { getSupabaseStorage } from '@/src/lib/db/supabase';
+import { logApiRequest, createErrorResponse, checkRequiredEnv } from '@/src/lib/api-logger';
 
 async function getUserFromRequest(request: NextRequest) {
   const authHeader = request.headers.get('authorization');
@@ -23,16 +24,18 @@ async function getUserFromRequest(request: NextRequest) {
 }
 
 export async function GET(request: NextRequest) {
+  const method = 'GET';
+  const path = '/api/v1/creatives';
+  
   try {
     const user = await getUserFromRequest(request);
     if (!user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { 
-          status: 401,
-          headers: { 'Content-Type': 'application/json' }
-        }
-      );
+      const response = createErrorResponse('UNAUTHORIZED', 'Unauthorized', 401);
+      logApiRequest(method, path, 401);
+      return NextResponse.json(response, { 
+        status: 401,
+        headers: { 'Content-Type': 'application/json' }
+      });
     }
 
     const { searchParams } = new URL(request.url);
@@ -41,6 +44,7 @@ export async function GET(request: NextRequest) {
 
     const creatives = await db.getCreativesByUserId(user.id, limit, offset);
 
+    logApiRequest(method, path, 200);
     return NextResponse.json(
       {
         creatives,
@@ -54,41 +58,45 @@ export async function GET(request: NextRequest) {
       }
     );
   } catch (error) {
-    console.error('Error fetching creatives:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch creatives' },
-      { 
-        status: 500,
-        headers: { 'Content-Type': 'application/json' }
-      }
+    const response = createErrorResponse(
+      'FETCH_CREATIVES_ERROR',
+      'Failed to fetch creatives',
+      500,
+      error instanceof Error ? error.message : String(error)
     );
+    logApiRequest(method, path, 500, error);
+    return NextResponse.json(response, { 
+      status: 500,
+      headers: { 'Content-Type': 'application/json' }
+    });
   }
 }
 
 export async function POST(request: NextRequest) {
+  const method = 'POST';
+  const path = '/api/v1/creatives';
+  
   try {
     const user = await getUserFromRequest(request);
     if (!user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { 
-          status: 401,
-          headers: { 'Content-Type': 'application/json' }
-        }
-      );
+      const response = createErrorResponse('UNAUTHORIZED', 'Unauthorized', 401);
+      logApiRequest(method, path, 401);
+      return NextResponse.json(response, { 
+        status: 401,
+        headers: { 'Content-Type': 'application/json' }
+      });
     }
 
     const formData = await request.formData();
     const file = formData.get('file') as File | null;
     
     if (!file) {
-      return NextResponse.json(
-        { error: 'File is required' },
-        { 
-          status: 400,
-          headers: { 'Content-Type': 'application/json' }
-        }
-      );
+      const response = createErrorResponse('MISSING_FILE', 'File is required', 400);
+      logApiRequest(method, path, 400);
+      return NextResponse.json(response, { 
+        status: 400,
+        headers: { 'Content-Type': 'application/json' }
+      });
     }
 
     // Validate file type
@@ -96,13 +104,16 @@ export async function POST(request: NextRequest) {
     const isVideo = file.type.startsWith('video/');
     
     if (!isImage && !isVideo) {
-      return NextResponse.json(
-        { error: 'File must be an image or video' },
-        { 
-          status: 400,
-          headers: { 'Content-Type': 'application/json' }
-        }
+      const response = createErrorResponse(
+        'INVALID_FILE_TYPE',
+        'File must be an image or video',
+        400
       );
+      logApiRequest(method, path, 400);
+      return NextResponse.json(response, { 
+        status: 400,
+        headers: { 'Content-Type': 'application/json' }
+      });
     }
 
     // Get metadata from form
@@ -112,9 +123,15 @@ export async function POST(request: NextRequest) {
     const language = formData.get('language')?.toString() || null;
     const goal = formData.get('goal')?.toString() || null;
 
-    // Upload file to storage
-    let fileUrl: string | null = null;
+    // Check storage configuration if needed
     const storage = getSupabaseStorage();
+    const envCheck = checkRequiredEnv({
+      NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
+      SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
+    });
+    
+    // Upload file to storage (optional - can work without storage)
+    let fileUrl: string | null = null;
     
     if (storage) {
       try {
@@ -146,7 +163,21 @@ export async function POST(request: NextRequest) {
       } catch (storageError) {
         console.error('Storage upload error:', storageError);
         // Continue without file URL for in-memory mode
+        // Log warning but don't fail the request
       }
+    } else if (envCheck) {
+      // Storage is expected but not configured
+      const response = createErrorResponse(
+        'STORAGE_NOT_CONFIGURED',
+        `Storage is not configured. Please set the following environment variables: ${envCheck.missing.join(', ')}`,
+        500,
+        { missing: envCheck.missing }
+      );
+      logApiRequest(method, path, 500, new Error('Storage not configured'));
+      return NextResponse.json(response, { 
+        status: 500,
+        headers: { 'Content-Type': 'application/json' }
+      });
     }
 
     // Create creative record
@@ -165,6 +196,7 @@ export async function POST(request: NextRequest) {
       status: 'queued',
     });
 
+    logApiRequest(method, path, 201);
     return NextResponse.json(
       { creative },
       { 
@@ -173,14 +205,17 @@ export async function POST(request: NextRequest) {
       }
     );
   } catch (error) {
-    console.error('Error creating creative:', error);
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Failed to create creative' },
-      { 
-        status: 500,
-        headers: { 'Content-Type': 'application/json' }
-      }
+    const response = createErrorResponse(
+      'CREATE_CREATIVE_ERROR',
+      error instanceof Error ? error.message : 'Failed to create creative',
+      500,
+      error instanceof Error ? { stack: error.stack } : String(error)
     );
+    logApiRequest(method, path, 500, error);
+    return NextResponse.json(response, { 
+      status: 500,
+      headers: { 'Content-Type': 'application/json' }
+    });
   }
 }
 

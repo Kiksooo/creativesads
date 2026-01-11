@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import StatusPill from './StatusPill';
+import { t, type Locale, isValidLocale } from '@/lib/i18n/messages';
 
 export interface Creative {
   id: string;
@@ -20,7 +21,8 @@ interface CreativeCardProps {
 }
 
 export default function CreativeCard({ creative, locale }: CreativeCardProps) {
-  const name = creative.name || creative.title || 'Untitled';
+  const localeValid: Locale = isValidLocale(locale) ? locale : 'en';
+  const name = creative.name || creative.title || t(localeValid, 'creative.untitled');
   const thumbnail = creative.thumbnail;
   const status = creative.status || 'draft';
 

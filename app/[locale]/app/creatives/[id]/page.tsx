@@ -7,6 +7,7 @@ import { isValidLocale, t } from '@/lib/i18n/messages';
 import { notFound } from 'next/navigation';
 import { apiGet, apiPost } from '@/src/lib/api';
 import { clearToken } from '@/src/lib/auth';
+import { mapErrorMessageToKey } from '@/lib/i18n/errorMapper';
 import { Card, CardContent } from '@/src/components/ui/Card';
 import Button from '@/src/components/ui/Button';
 import StatusPill from '@/src/components/StatusPill';
@@ -103,7 +104,9 @@ export default function CreativeDetailPage() {
         }
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load creative');
+      const errorMsg = err instanceof Error ? err.message : 'Failed to load creative';
+      const errorKey = mapErrorMessageToKey(errorMsg);
+      setError(t(locale, errorKey));
     } finally {
       setLoading(false);
     }
@@ -116,7 +119,11 @@ export default function CreativeDetailPage() {
     setError(null);
 
     try {
-      const response = await apiPost<{ analysis: Analysis }>(`/creatives/${id}/analyze`);
+      // Send language preference with the analyze request
+      const response = await apiPost<{ analysis: Analysis }>(
+        `/creatives/${id}/analyze`,
+        { language: locale }
+      );
 
       if (response.status === 401) {
         clearToken();
@@ -126,13 +133,14 @@ export default function CreativeDetailPage() {
       }
 
       if (response.status === 429) {
-        setError('Daily analysis limit reached. Please try again tomorrow.');
+        setError(t(locale, 'analysis.dailyLimitReached'));
         setAnalyzing(false);
         return;
       }
 
       if (response.error) {
-        setError(response.error);
+        const errorKey = mapErrorMessageToKey(response.error);
+        setError(t(locale, errorKey));
         setAnalyzing(false);
         return;
       }
@@ -143,7 +151,9 @@ export default function CreativeDetailPage() {
         await fetchCreative();
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Analysis failed');
+      const errorMsg = err instanceof Error ? err.message : 'Analysis failed';
+      const errorKey = mapErrorMessageToKey(errorMsg);
+      setError(t(locale, errorKey));
     } finally {
       setAnalyzing(false);
     }
@@ -153,8 +163,8 @@ export default function CreativeDetailPage() {
     return (
       <EmptyState
         title={t(locale, 'auth.sessionExpired')}
-        description="Please login again to continue."
-        actionLabel="Login"
+        description={t(locale, 'auth.pleaseLoginAgain')}
+        actionLabel={t(locale, 'auth.login')}
         actionHref={`/${locale}/login`}
       />
     );
@@ -171,7 +181,7 @@ export default function CreativeDetailPage() {
   if (error && !creative) {
     return (
       <EmptyState
-        title="Error loading creative"
+        title={t(locale, 'errors.failedToLoadCreative')}
         description={error}
         actionLabel={t(locale, 'common.back')}
         actionHref={`/${locale}/app`}
@@ -182,8 +192,8 @@ export default function CreativeDetailPage() {
   if (!creative) {
     return (
       <EmptyState
-        title="Creative not found"
-        description="The creative you're looking for doesn't exist."
+        title={t(locale, 'creative.notFound')}
+        description={t(locale, 'creative.notFoundDescription')}
         actionLabel={t(locale, 'common.back')}
         actionHref={`/${locale}/app`}
       />
@@ -224,10 +234,10 @@ export default function CreativeDetailPage() {
               {analyzing ? (
                 <span className="flex items-center gap-2">
                   <Spinner size="sm" />
-                  Analyzing...
+                  {t(locale, 'analysis.analyzing')}
                 </span>
               ) : (
-                'Start Analysis'
+                t(locale, 'analysis.startAnalysis')
               )}
             </Button>
           )}
@@ -247,26 +257,40 @@ export default function CreativeDetailPage() {
           {/* Preview */}
           <Card>
             <CardContent className="p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Preview</h2>
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">{t(locale, 'creative.preview')}</h2>
               {creative.file_url ? (
                 creative.type === 'video' ? (
                   <video
                     src={creative.file_url}
                     controls
                     className="w-full rounded-lg"
+                    onError={() => {
+                      setError(t(locale, 'errors.failedToLoadVideoPreview'));
+                    }}
                   >
-                    Your browser does not support the video tag.
+                    {t(locale, 'creative.videoNotSupported')}
                   </video>
                 ) : (
                   <img
                     src={creative.file_url}
                     alt={creative.filename}
                     className="w-full rounded-lg"
+                    onError={() => {
+                      setError(t(locale, 'errors.failedToLoadImagePreview'));
+                    }}
                   />
                 )
               ) : (
-                <div className="aspect-video bg-gray-100 rounded-lg flex items-center justify-center">
-                  <p className="text-gray-500">No preview available</p>
+                <div className="aspect-video bg-gray-100 rounded-lg flex flex-col items-center justify-center gap-4 p-6">
+                  <p className="text-gray-500 text-center">{t(locale, 'errors.fileNotFound')}</p>
+                  <Button
+                    variant="primary"
+                    onClick={() => {
+                      window.location.reload();
+                    }}
+                  >
+                    {t(locale, 'common.refresh')}
+                  </Button>
                 </div>
               )}
             </CardContent>
@@ -275,35 +299,35 @@ export default function CreativeDetailPage() {
           {/* Metadata */}
           <Card>
             <CardContent className="p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Metadata</h2>
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">{t(locale, 'creative.metadata')}</h2>
               <dl className="grid grid-cols-2 gap-4">
                 {creative.platform && (
                   <>
-                    <dt className="text-sm font-medium text-gray-500">Platform</dt>
+                    <dt className="text-sm font-medium text-gray-500">{t(locale, 'creative.platform')}</dt>
                     <dd className="text-sm text-gray-900">{creative.platform}</dd>
                   </>
                 )}
                 {creative.vertical && (
                   <>
-                    <dt className="text-sm font-medium text-gray-500">Vertical</dt>
+                    <dt className="text-sm font-medium text-gray-500">{t(locale, 'creative.vertical')}</dt>
                     <dd className="text-sm text-gray-900">{creative.vertical}</dd>
                   </>
                 )}
                 {creative.country && (
                   <>
-                    <dt className="text-sm font-medium text-gray-500">Country</dt>
+                    <dt className="text-sm font-medium text-gray-500">{t(locale, 'creative.country')}</dt>
                     <dd className="text-sm text-gray-900">{creative.country}</dd>
                   </>
                 )}
                 {creative.language && (
                   <>
-                    <dt className="text-sm font-medium text-gray-500">Language</dt>
+                    <dt className="text-sm font-medium text-gray-500">{t(locale, 'creative.language')}</dt>
                     <dd className="text-sm text-gray-900">{creative.language}</dd>
                   </>
                 )}
                 {creative.goal && (
                   <>
-                    <dt className="text-sm font-medium text-gray-500">Goal</dt>
+                    <dt className="text-sm font-medium text-gray-500">{t(locale, 'creative.goal')}</dt>
                     <dd className="text-sm text-gray-900">{creative.goal}</dd>
                   </>
                 )}
@@ -318,7 +342,7 @@ export default function CreativeDetailPage() {
             <Card>
               <CardContent className="p-6 text-center">
                 <Spinner size="lg" />
-                <p className="mt-4 text-sm text-gray-600">Analyzing creative...</p>
+                <p className="mt-4 text-sm text-gray-600">{t(locale, 'analysis.analyzingCreative')}</p>
               </CardContent>
             </Card>
           )}
@@ -326,7 +350,7 @@ export default function CreativeDetailPage() {
           {creative.status === 'done' && analysis && (
             <Card>
               <CardContent className="p-6">
-                <h2 className="text-lg font-semibold text-gray-900 mb-4">AI Analysis</h2>
+                <h2 className="text-lg font-semibold text-gray-900 mb-4">{t(locale, 'analysis.title')}</h2>
                 
                 {/* Scores */}
                 <div className="space-y-4 mb-6">
@@ -471,15 +495,15 @@ export default function CreativeDetailPage() {
           {creative.status === 'queued' && (
             <Card>
               <CardContent className="p-6 text-center">
-                <p className="text-sm text-gray-600 mb-4">Ready to analyze</p>
+                <p className="text-sm text-gray-600 mb-4">{t(locale, 'analysis.readyToAnalyze')}</p>
                 <Button variant="primary" onClick={handleAnalyze} disabled={analyzing}>
                   {analyzing ? (
                     <span className="flex items-center gap-2">
                       <Spinner size="sm" />
-                      Analyzing...
+                      {t(locale, 'analysis.analyzing')}
                     </span>
                   ) : (
-                    'Start Analysis'
+                    t(locale, 'analysis.startAnalysis')
                   )}
                 </Button>
               </CardContent>
@@ -490,7 +514,7 @@ export default function CreativeDetailPage() {
             <Card>
               <CardContent className="p-6">
                 <Alert variant="error">
-                  <p className="text-sm font-medium">Analysis failed. Please try again.</p>
+                  <p className="text-sm font-medium">{t(locale, 'analysis.failed')}</p>
                 </Alert>
                 <Button
                   variant="primary"
@@ -501,10 +525,10 @@ export default function CreativeDetailPage() {
                   {analyzing ? (
                     <span className="flex items-center gap-2">
                       <Spinner size="sm" />
-                      Retrying...
+                      {t(locale, 'analysis.retrying')}
                     </span>
                   ) : (
-                    'Retry Analysis'
+                    t(locale, 'analysis.retryAnalysis')
                   )}
               </Button>
         </CardContent>

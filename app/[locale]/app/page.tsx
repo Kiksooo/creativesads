@@ -12,6 +12,7 @@ import { type Creative } from '@/src/components/CreativeCard';
 import { clearToken } from '@/src/lib/auth';
 import Link from 'next/link';
 import Button from '@/src/components/ui/Button';
+import { mapErrorMessageToKey } from '@/lib/i18n/errorMapper';
 
 export default function DashboardPage() {
   const params = useParams();
@@ -57,7 +58,9 @@ export default function DashboardPage() {
         const items = data?.creatives || data?.data || (Array.isArray(data) ? data : []);
         setCreatives(items.slice(0, 8)); // Show only recent 8 on dashboard
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'An error occurred');
+        const errorMsg = err instanceof Error ? err.message : 'An error occurred';
+        const errorKey = mapErrorMessageToKey(errorMsg);
+        setError(t(locale, errorKey));
       } finally {
         setLoading(false);
       }
@@ -74,8 +77,8 @@ export default function DashboardPage() {
         </div>
         <EmptyState
           title={t(locale, 'auth.sessionExpired')}
-          description="Please login again to continue."
-          actionLabel="Login"
+          description={t(locale, 'auth.pleaseLoginAgain')}
+          actionLabel={t(locale, 'auth.login')}
           actionHref={`/${locale}/login`}
         />
       </div>
@@ -100,27 +103,27 @@ export default function DashboardPage() {
         <LoadingGrid count={8} />
       ) : error ? (
         <EmptyState
-          title="Error loading dashboard"
+          title={t(locale, 'errors.failedToLoadDashboard')}
           description={error}
           actionLabel={t(locale, 'common.retry')}
           onClick={() => router.refresh()}
         />
       ) : creatives.length === 0 ? (
         <EmptyState
-          title="Welcome to Creo App"
-          description="Get started by uploading your first creative for AI analysis."
+          title={t(locale, 'dashboard.welcome')}
+          description={t(locale, 'dashboard.welcomeDescription')}
           actionLabel={t(locale, 'common.upload')}
           actionHref={`/${locale}/app/upload`}
         />
       ) : (
         <>
           <div className="mb-6 flex items-center justify-between">
-            <h2 className="text-xl font-semibold text-gray-900">Recent Creatives</h2>
+            <h2 className="text-xl font-semibold text-gray-900">{t(locale, 'creative.recentCreatives')}</h2>
             <Link
               href={`/${locale}/app/library`}
               className="text-sm text-gray-600 hover:text-black font-medium"
             >
-              View all →
+              {t(locale, 'common.viewAll')}
             </Link>
           </div>
           <CreativeGrid creatives={creatives} locale={locale} />

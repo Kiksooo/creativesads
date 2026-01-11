@@ -3,44 +3,46 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/src/lib/db';
 import { verifyToken } from '@/src/lib/auth/jwt';
+import { logApiRequest, createErrorResponse } from '@/src/lib/api-logger';
 
 export async function GET(request: NextRequest) {
+  const method = 'GET';
+  const path = '/api/v1/auth/me';
+  
   try {
     const authHeader = request.headers.get('authorization');
     if (!authHeader?.startsWith('Bearer ')) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { 
-          status: 401,
-          headers: { 'Content-Type': 'application/json' }
-        }
-      );
+      const response = createErrorResponse('UNAUTHORIZED', 'Unauthorized', 401);
+      logApiRequest(method, path, 401);
+      return NextResponse.json(response, { 
+        status: 401,
+        headers: { 'Content-Type': 'application/json' }
+      });
     }
 
     const token = authHeader.substring(7);
     const payload = verifyToken(token);
 
     if (!payload) {
-      return NextResponse.json(
-        { error: 'Invalid or expired token' },
-        { 
-          status: 401,
-          headers: { 'Content-Type': 'application/json' }
-        }
-      );
+      const response = createErrorResponse('INVALID_TOKEN', 'Invalid or expired token', 401);
+      logApiRequest(method, path, 401);
+      return NextResponse.json(response, { 
+        status: 401,
+        headers: { 'Content-Type': 'application/json' }
+      });
     }
 
     const user = await db.getUserById(payload.userId);
     if (!user) {
-      return NextResponse.json(
-        { error: 'User not found' },
-        { 
-          status: 404,
-          headers: { 'Content-Type': 'application/json' }
-        }
-      );
+      const response = createErrorResponse('USER_NOT_FOUND', 'User not found', 404);
+      logApiRequest(method, path, 404);
+      return NextResponse.json(response, { 
+        status: 404,
+        headers: { 'Content-Type': 'application/json' }
+      });
     }
 
+    logApiRequest(method, path, 200);
     return NextResponse.json(
       {
         user: {
@@ -54,14 +56,17 @@ export async function GET(request: NextRequest) {
       }
     );
   } catch (error) {
-    console.error('Get user error:', error);
-    return NextResponse.json(
-      { error: 'Failed to get user' },
-      { 
-        status: 500,
-        headers: { 'Content-Type': 'application/json' }
-      }
+    const response = createErrorResponse(
+      'GET_USER_ERROR',
+      'Failed to get user',
+      500,
+      error instanceof Error ? { message: error.message, stack: error.stack } : String(error)
     );
+    logApiRequest(method, path, 500, error);
+    return NextResponse.json(response, { 
+      status: 500,
+      headers: { 'Content-Type': 'application/json' }
+    });
   }
 }
 
