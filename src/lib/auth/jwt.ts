@@ -1,31 +1,33 @@
 // JWT utilities
 
 import jwt from 'jsonwebtoken';
-
-const JWT_SECRET = process.env.JWT_SECRET;
-
-if (!JWT_SECRET) {
-  throw new Error('JWT_SECRET is not set');
-}
-
-const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
+import type { SignOptions } from 'jsonwebtoken';
+import { getJWT_SECRET } from '../env';
 
 export interface TokenPayload {
   userId: string;
   email: string;
 }
 
+const expiresInSeconds = Number(process.env.JWT_EXPIRES_IN ?? "604800"); // 7 days default
+
+const signOptions: SignOptions = {
+  expiresIn: Number.isFinite(expiresInSeconds) ? expiresInSeconds : 604800,
+};
+
 export function generateToken(userId: string, email: string): string {
+  const secret = getJWT_SECRET(); // Guaranteed to be string, throws if not set
   return jwt.sign(
     { userId, email },
-    JWT_SECRET,
-    { expiresIn: JWT_EXPIRES_IN }
+    secret,
+    signOptions
   );
 }
 
 export function verifyToken(token: string): TokenPayload | null {
   try {
-    const decoded = jwt.verify(token, JWT_SECRET) as TokenPayload;
+    const secret = getJWT_SECRET(); // Guaranteed to be string, throws if not set
+    const decoded = jwt.verify(token, secret) as TokenPayload;
     return decoded;
   } catch {
     return null;

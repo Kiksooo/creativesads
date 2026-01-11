@@ -24,7 +24,7 @@ async function proxy(
   req: NextRequest,
   pathSegments: string[] = []
 ): Promise<NextResponse> {
-  const INTERNAL_BASE = process.env.API_INTERNAL_BASE_URL;
+  const INTERNAL_BASE = process.env.API_INTERNAL_BASE_URL; // Optional - can be undefined for proxy
 
   // Check if API_INTERNAL_BASE_URL is configured
   if (!INTERNAL_BASE) {

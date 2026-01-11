@@ -3,9 +3,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/src/lib/db';
 import { getSupabaseStorage } from '@/src/lib/db/supabase';
-import jwt from 'jsonwebtoken';
-
-const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-change-in-production';
+import { verifyToken } from '@/src/lib/auth/jwt';
 
 async function getUserFromRequest(request: NextRequest) {
   const authHeader = request.headers.get('authorization');
@@ -14,13 +12,13 @@ async function getUserFromRequest(request: NextRequest) {
   }
 
   const token = authHeader.substring(7);
-  try {
-    const decoded = jwt.verify(token, JWT_SECRET) as { userId: string; email: string };
-    const user = await db.getUserById(decoded.userId);
-    return user;
-  } catch {
+  const decoded = verifyToken(token);
+  if (!decoded) {
     return null;
   }
+
+  const user = await db.getUserById(decoded.userId);
+  return user;
 }
 
 export async function POST(
